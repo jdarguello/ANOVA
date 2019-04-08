@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from outliers import smirnov_grubbs as grubbs
 import pandas as pd
 import numpy as np
@@ -16,11 +18,26 @@ class TxtData():
 	"""
 	
 	def txtinput(self):
-		pass
+		with open("Generalidades.txt", "r") as file:
+			frases = file.read().split("\n")
+			data = {}
+			for frase in frases:
+				if len(frase) > 0 and frase[:1] != "#":
+					contenido = frase.split(' ')
+					try:
+						data[contenido[0]] = float(contenido[2])
+					except:
+						if contenido[2] == "True":
+							data[contenido[0]] = True
+						elif contenido[2] == "False":
+							data[contenido[0]] = False
+						else:
+							data[contenido[0]] = contenido[2]
+		return data
 
 class ExcelIO():
 	"""
-		Obtiene los datos y envía resultados en formato .xlsx
+		Obtiene los datos y envia resultados en formato .xlsx
 	"""
 
 	def Input(self, file):
@@ -38,8 +55,12 @@ class ExcelIO():
 	def Output(self):
 		pass
 
-class ANOVA1(ExcelIO):
+class ANOVA1(ExcelIO, TxtData):
 	def __init__(self, **kwargs):
+		#Lectura de Generalidades.txt
+		txt_Dat = self.txtinput()
+		print(txt_Dat)
+
 		#Datos de interés
 		Data = self.Input(kwargs['file'])
 		Encabezados = list(Data)
@@ -47,63 +68,67 @@ class ANOVA1(ExcelIO):
 		General = self.EG(Data, Encabezados)
 
 		#Eliminación de datos anómalos
-		DATA = self.GrubbsAnomaly(General, Encabezados, kwargs['alpha'])
-		self.NormalDist(General, Encabezados, kwargs['directory'])
-
-	def NormalDist(self, Data, Encabezados, directory):
 		for columna in Encabezados:
-			Data[columna]['Datos originales']['Orden'] = np.searchsorted(
-				np.sort(Data[columna]['Datos originales']['data']),
-				Data[columna]['Datos originales']['data'], side='left')
-			#Creación de formatos de datos "Fracción", "Z", Log(P) y %
-			Data[columna]['Datos originales']['Fracción'] = np.zeros(
-				Data[columna]['Datos originales']['cant_datos'])
-			Data[columna]['Datos originales']['Z'] = np.zeros(
-				Data[columna]['Datos originales']['cant_datos'])
-			Data[columna]['Datos originales']['logP'] = np.zeros(
-				Data[columna]['Datos originales']['cant_datos'])
-			Data[columna]['Datos originales']['Porcentaje'] = np.zeros(
-				Data[columna]['Datos originales']['cant_datos'])
-			#Llenado de la información
-			for i in range(Data[columna]['Datos originales']['cant_datos']):
-				Data[columna]['Datos originales']['Orden'][i] += 1
-				Data[columna]['Datos originales']['Fracción'][i] = \
-				(Data[columna]['Datos originales']['Orden'][i]-0.5)/Data\
-				[columna]['Datos originales']['cant_datos']
-				Data[columna]['Datos originales']['Z'][i] = np.random.normal(
-					Data[columna]['Datos originales']['Fracción'][i])
-				Data[columna]['Datos originales']['logP'][i] = math.log10(
-					100*Data[columna]['Datos originales']['Fracción'][i])
-				Data[columna]['Datos originales']['Porcentaje'][i] = 100*\
-				Data[columna]['Datos originales']['Fracción'][i]
-			#GRÁFICAS
-			#Prueba de distribución normal
-			x = Data[columna]['Datos originales']['data']
-			y = Data[columna]['Datos originales']['Fracción']
-			fig, ax = plt.subplots()
-			ax.plot(x,y,'.')
-			#Línea de tendencia
-			z = np.polyfit(x,y,1)
-			p = np.poly1d(z)
-			ax.plot(x,p(x), "r-")
-			#Generalidades del gráfico
-			plt.title("Prueba de distirbución normal - " + columna)
-			plt.xlabel("Datos")
-			plt.ylabel("Z")
-			#plt.show()
-			#Guardar gráfica
-			plt.savefig(directory + columna + '.png')
-		print(Data)
+			if General[columna]['Datos originales']['cant_datos'] <= 10 or \
+				txt_Dat['Grubbs']:
+				DATA = self.GrubbsAnomaly(General[columna], txt_Dat['alpha'])
+			else:
+				self.NormalDist(General[columna], kwargs['directory'], columna)
+			if txt_Dat['NormalDist']:
+				self.NormalDist(General[columna], kwargs['directory'], columna)
 
-	def GrubbsAnomaly(self, Data, Encabezados, alpha):
-		for columna in Encabezados:
-			col = {}
-			col['data'] = grubbs.test(Data[columna]\
-				['Datos originales']['data'], alpha=alpha)
-			#Conteo de datos
-			col['cant_datos'] = len(col['data'])
+	def NormalDist(self, Data, directory, columna):
+		Data['Datos originales']['Orden'] = np.searchsorted(
+			np.sort(Data['Datos originales']['data']),
+			Data['Datos originales']['data'], side='left')
+		#Creación de formatos de datos "Fracción", "Z", Log(P) y %
+		Data['Datos originales']['Fracción'] = np.zeros(
+			Data['Datos originales']['cant_datos'])
+		Data['Datos originales']['Z'] = np.zeros(
+			Data['Datos originales']['cant_datos'])
+		Data['Datos originales']['logP'] = np.zeros(
+			Data['Datos originales']['cant_datos'])
+		Data['Datos originales']['Porcentaje'] = np.zeros(
+			Data['Datos originales']['cant_datos'])
+		#Llenado de la información
+		for i in range(Data['Datos originales']['cant_datos']):
+			Data['Datos originales']['Orden'][i] += 1
+			Data['Datos originales']['Fracción'][i] = \
+			(Data['Datos originales']['Orden'][i]-0.5)/Data\
+			['Datos originales']['cant_datos']
+			Data['Datos originales']['Z'][i] = np.random.normal(
+				Data['Datos originales']['Fracción'][i])
+			Data['Datos originales']['logP'][i] = math.log10(
+				100*Data['Datos originales']['Fracción'][i])
+			Data['Datos originales']['Porcentaje'][i] = 100*\
+			Data['Datos originales']['Fracción'][i]
+		#GRÁFICAS
+		#Prueba de distribución normal
+		x = Data['Datos originales']['data']
+		y = Data['Datos originales']['Fracción']
+		fig, ax = plt.subplots()
+		ax.plot(x,y,'.')
+		#Línea de tendencia
+		z = np.polyfit(x,y,1)
+		p = np.poly1d(z)
+		ax.plot(x,p(x), "r-")
+		#Generalidades del gráfico
+		plt.title("Prueba de distirbución normal - " + columna)
+		plt.xlabel("Datos")
+		plt.ylabel("Z")
+		#plt.show()
+		#Guardar gráfica
+		plt.savefig(directory + columna + '.png')
+		#print(Data)
 
-			Data[columna]['Datos definitivos'] = col
+	def GrubbsAnomaly(self, Data, alpha):
+		col = {}
+		col['data'] = grubbs.test(Data\
+			['Datos originales']['data'], alpha=alpha)
+		#Conteo de datos
+		col['cant_datos'] = len(col['data'])
+
+		Data['Datos definitivos'] = col
 	
 	def EG(self, Data, Encabezados):
 		#Conversión de datos a matriz

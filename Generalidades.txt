@@ -1,3 +1,19 @@
-#Precisión de Grubbs
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+#NO uses tilde en los comentarios (los comentarios se identifican con '#' al principio)
+
+#-----MOTOR-----
 ANOVA = 1
-alpha=0.05
+
+
+#----DATOS ANOMALOS----
+
+#---Grubbs---
+alpha = 0.05
+#Opcional
+Grubbs = True
+
+#---Distribucion normal---
+#Opcional
+NormalDist = True
