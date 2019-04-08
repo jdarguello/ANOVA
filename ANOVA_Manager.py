@@ -10,6 +10,14 @@ data = np.array([2.9, 2.2, 2.2, 2.1, 2.3, 2.2, 2.7, 2.3])
 
 g = grubbs.test(data, alpha=0.05)
 
+class TxtData():
+	"""
+		Obtiene datos generales
+	"""
+	
+	def txtinput(self):
+		pass
+
 class ExcelIO():
 	"""
 		Obtiene los datos y envía resultados en formato .xlsx
