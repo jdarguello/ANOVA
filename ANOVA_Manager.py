@@ -69,13 +69,31 @@ class ANOVA1(ExcelIO, TxtData):
 
 		#Eliminación de datos anómalos
 		for columna in Encabezados:
-			if General[columna]['Datos originales']['cant_datos'] <= 10 or \
+			if General[columna]['Datos originales']['cant_datos'] <= 15 or \
 				txt_Dat['Grubbs']:
-				DATA = self.GrubbsAnomaly(General[columna], txt_Dat['alpha'])
+				self.GrubbsAnomaly(General, txt_Dat['alpha'], columna)
 			else:
 				self.NormalDist(General[columna], kwargs['directory'], columna)
 			if txt_Dat['NormalDist']:
 				self.NormalDist(General[columna], kwargs['directory'], columna)
+		#Promedio global
+		General['GAVG'] = self.Average(General, Encabezados)
+		print(General)
+	
+	def Average(self, Data, Encabezados):
+		#Promedio ponderado general		
+		suma = 0
+		num_datos = 0
+		for columna in Encabezados:
+			for dato in Data[columna]['Datos definitivos']['data']:
+				suma += dato
+			num_datos += Data[columna]['Datos definitivos']['cant_datos']
+		promedio = suma/num_datos
+		#Diferencia entre promedio local y general
+		for columna in Encabezados:
+			Data[columna]['dif_prom'] = Data[columna]['Datos definitivos']['promedio']-promedio
+		return promedio
+			
 
 	def NormalDist(self, Data, directory, columna):
 		Data['Datos originales']['Orden'] = np.searchsorted(
@@ -121,14 +139,16 @@ class ANOVA1(ExcelIO, TxtData):
 		plt.savefig(directory + columna + '.png')
 		#print(Data)
 
-	def GrubbsAnomaly(self, Data, alpha):
+	def GrubbsAnomaly(self, Data, alpha, columna):
 		col = {}
-		col['data'] = grubbs.test(Data\
+		col['data'] = grubbs.test(Data[columna]\
 			['Datos originales']['data'], alpha=alpha)
 		#Conteo de datos
 		col['cant_datos'] = len(col['data'])
+		col['promedio'] = np.mean(col['data'])
+		col['std'] = np.std(col['data'])
 
-		Data['Datos definitivos'] = col
+		Data[columna]['Datos definitivos'] = col
 	
 	def EG(self, Data, Encabezados):
 		#Conversión de datos a matriz
