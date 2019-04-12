@@ -6,7 +6,7 @@ import numpy as np
 import scipy.stats
 import math
 import matplotlib.pyplot as plt
-import openpyxl
+import openpyxl as op
 
 class TxtData():
     """
@@ -48,8 +48,32 @@ class ExcelIO():
             Relevant_Data = Data.iloc[:, 1:]
             return Relevant_Data
 
-    def Output(self):
-            pass
+    def Output(self, res, file, txtDat):
+            wb = op.load_workbook(file)
+            #----CREACIÓN DE HOJAS----
+            #Cambio de nombre 'Hoja 1'
+            if 'Hoja1' in wb.sheetnames:
+                hoja1 = wb.get_sheet_by_name('Hoja1')
+                hoja1.title = 'Datos'
+                wb.save(file)
+            elif 'Sheet1' in wb.sheetnames:
+                sheet1 = wb.get_sheet_by_name('Sheet1')
+                sheet1.title = 'Data'
+                wb.save(file)
+            #Creación hoja NormalDist, si no existe
+            if 'NormalDist' in wb.sheetnames:
+                pass
+            elif txtDat['NormalDist']:
+                wb.create_sheet('NormalDist')
+                wb.save(file)
+            #Creación hoja 'Datos definitivos'
+            if 'Datos definitivos' in wb.sheetnames:
+                pass
+            else:
+                wb.create_sheet('Datos definitivos')
+                wb.save(file)
+            
+            
 
 class ANOVA1(ExcelIO, TxtData):
     def __init__(self, **kwargs):
@@ -100,6 +124,9 @@ class ANOVA1(ExcelIO, TxtData):
             General['f'] = General['S2A']/General['S2w']
             General['fumbral'] = scipy.stats.f.isf(txt_Dat['precision_f'], t-1, n-t)
             print(General)
+
+            #Resultados
+            self.Output(General, kwargs['file'], txt_Dat)
 
     def Qs(self, Data, General):
             #Qw
