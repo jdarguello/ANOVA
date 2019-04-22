@@ -7,6 +7,7 @@ import scipy.stats
 import math
 import matplotlib.pyplot as plt
 import openpyxl as op
+from PIL import Image
 
 class TxtData():
     """
@@ -50,6 +51,8 @@ class ExcelIO():
 
     def Output(self, res, file, txtDat):
             wb = op.load_workbook(file)
+            indeseables = ['GAVG', 'Q', 'Qc', 'Qw', 'QA', 't', 'n',
+                'S2A', 'S2w', 'S2', 'f', 'fumbral']
             #----CREACIÓN DE HOJAS----
             #Cambio de nombre 'Hoja 1'
             if 'Hoja1' in wb.sheetnames:
@@ -60,20 +63,60 @@ class ExcelIO():
                 sheet1 = wb.get_sheet_by_name('Sheet1')
                 sheet1.title = 'Data'
                 wb.save(file)
+            #-----NormalDist-----
             #Creación hoja NormalDist, si no existe
             if 'NormalDist' in wb.sheetnames:
-                pass
-            elif txtDat['NormalDist']:
-                wb.create_sheet('NormalDist')
-                wb.save(file)
+                std = wb.get_sheet_by_name('NormalDist')
+                wb.remove_sheet(std)
+            ND =  wb.create_sheet('NormalDist')
+            wb.save(file)
+            #Escritura de resultados
+            last = 1
+            for key, values in res.items():
+                validate = True
+                for ind in indeseables:
+                    if key == ind:
+                        validate = False
+                if validate:
+                    #print(key)
+                    original = res[key]['Datos originales']
+                    for i in range(original['cant_datos']):
+                        if i == 0:
+                            #Resize
+                            imgdir = direc + key + '.png'
+                            ancho = 575
+                            alto = 345
+                            size = (ancho, alto)
+                            img = Image.open(imgdir)
+                            img.thumbnail(size, Image.ANTIALIAS)
+                            img.save(imgdir)
+
+                            img = op.drawing.image.Image(imgdir)
+                            ND.add_image(img, 'F' + str(last))
+
+                            ND['A' + str(last)] = key
+                            last += 1
+
+                            ND['A' + str(last)] = 'Datos'
+                            ND['B' + str(last)] = 'Orden'
+                            ND['C' + str(last)] = 'Fracción'
+                            ND['D' + str(last)] = 'Z'
+                        else:
+                            ND['A' + str(last)] = original['data'][i]
+                            ND['B' + str(last)] = original['Orden'][i]
+                            ND['C' + str(last)] = original['Fracción'][i]
+                            ND['D' + str(last)] = original['Z'][i]
+                        last += 1
+                    last += 10
+            wb.save(file)
+            #----DATOS DEFINITIVOS----
             #Creación hoja 'Datos definitivos'
             if 'Datos definitivos' in wb.sheetnames:
-                pass
-            else:
-                wb.create_sheet('Datos definitivos')
-                wb.save(file)
-            
-            
+                std = wb.get_sheet_by_name('Datos definitivos')
+                wb.remove_sheet(std)
+            wb.create_sheet('Datos definitivos')
+            wb.save(file)
+            #Poner valores
 
 class ANOVA1(ExcelIO, TxtData):
     def __init__(self, **kwargs):
@@ -123,7 +166,7 @@ class ANOVA1(ExcelIO, TxtData):
             #f y fumbral
             General['f'] = General['S2A']/General['S2w']
             General['fumbral'] = scipy.stats.f.isf(txt_Dat['precision_f'], t-1, n-t)
-            print(General)
+            #print(General)
 
             #Resultados
             self.Output(General, kwargs['file'], txt_Dat)
