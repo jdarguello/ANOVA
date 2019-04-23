@@ -49,6 +49,13 @@ class ExcelIO():
             Relevant_Data = Data.iloc[:, 1:]
             return Relevant_Data
 
+    def colnum_string(self, n):
+        string = ""
+        while n > 0:
+            n, remainder = divmod(n - 1, 26)
+            string = chr(65 + remainder) + string
+        return string
+
     def Output(self, res, file, txtDat):
             wb = op.load_workbook(file)
             indeseables = ['GAVG', 'Q', 'Qc', 'Qw', 'QA', 't', 'n',
@@ -114,9 +121,41 @@ class ExcelIO():
             if 'Datos definitivos' in wb.sheetnames:
                 std = wb.get_sheet_by_name('Datos definitivos')
                 wb.remove_sheet(std)
-            wb.create_sheet('Datos definitivos')
+            DD = wb.create_sheet('Datos definitivos')
             wb.save(file)
             #Poner valores
+            print(res)
+            cant_datos = 0
+            cont = 2
+            last = 1
+            for key, value in res.items():
+                data = False
+                try:
+                    data = res[key]['Datos definitivos']
+                except:
+                    pass
+                if data:
+                    if data['cant_datos'] > cant_datos:
+                        cant_datos = data['cant_datos']
+                    letter = self.colnum_string(cont)
+                    DD[letter + '1'] = key
+                    for i in range(data['cant_datos']):
+                        DD[letter + str(i+2)] = data['data'][i]
+                    cont += 1
+            DD['A1'] = "Réplicas"
+            for i in range(cant_datos):
+                DD['A' + str(i+2)] = i + 1 
+            wb.save(file)
+            #-----Qs-----
+            #Creación hoja 'Qs'
+            if 'Qs' in wb.sheetnames:
+                std = wb.get_sheet_by_name('Qs')
+                wb.remove_sheet(std)
+            Qs = wb.create_sheet('Qs')
+            wb.save(file)
+            Qs['A1'] = 
+                    
+                    
 
 class ANOVA1(ExcelIO, TxtData):
     def __init__(self, **kwargs):
