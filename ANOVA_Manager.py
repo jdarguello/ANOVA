@@ -63,7 +63,7 @@ class ExcelIO():
             #----CREACIÓN DE HOJAS----
             #Cambio de nombre 'Hoja 1'
             if 'Hoja1' in wb.sheetnames:
-                hoja1 = wb.get_sheet_by_name('Hoja1')
+                hoja1 = wb['Hoja1']
                 hoja1.title = 'Datos'
                 wb.save(file)
             elif 'Sheet1' in wb.sheetnames:
@@ -73,8 +73,8 @@ class ExcelIO():
             #-----NormalDist-----
             #Creación hoja NormalDist, si no existe
             if 'NormalDist' in wb.sheetnames:
-                std = wb.get_sheet_by_name('NormalDist')
-                wb.remove_sheet(std)
+                std = wb['NormalDist']
+                wb.remove(std)
             ND =  wb.create_sheet('NormalDist')
             wb.save(file)
             #Escritura de resultados
@@ -119,8 +119,8 @@ class ExcelIO():
             #----DATOS DEFINITIVOS----
             #Creación hoja 'Datos definitivos'
             if 'Datos definitivos' in wb.sheetnames:
-                std = wb.get_sheet_by_name('Datos definitivos')
-                wb.remove_sheet(std)
+                std = wb['Datos definitivos']
+                wb.remove(std)
             DD = wb.create_sheet('Datos definitivos')
             wb.save(file)
             #Poner valores
@@ -149,12 +149,26 @@ class ExcelIO():
             #-----Qs-----
             #Creación hoja 'Qs'
             if 'Qs' in wb.sheetnames:
-                std = wb.get_sheet_by_name('Qs')
-                wb.remove_sheet(std)
+                std = wb['Qs']
+                wb.remove(std)
             Qs = wb.create_sheet('Qs')
             wb.save(file)
-            Qs['A1'] = 
-                    
+            Qs['A1'] = 'Cálculo de Q:'
+            cont = 1
+            for key, value in res.items():
+                data = False
+                try:
+                    data = res[key]
+                except:
+                    pass
+                if data:
+                    letter = self.colnum_string(cont)
+                    print('algo')
+                    for i in range(data['Datos definitivos']['cant_datos']):
+                        print(data['Qs'][i])
+                        Qs[letter + str(i+2)] = data['Qs'][i]
+                    cont += 1
+
                     
 
 class ANOVA1(ExcelIO, TxtData):
